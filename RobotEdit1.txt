@@ -1,0 +1,84 @@
+/*     Andrea Demetrio Rocca
+        Copyleft
+       *  Il codice viene fornito cosi come si trova senza alcuna responsabilita dell'utilizzo che ne verra fatto
+       *   Per consigli, dubbi o critiche non esitate a contattarci sul canale "GDA - Tutorial per te" o alla mail "gdasteam@gmail.com"!!
+*/
+
+
+#define DIRD 2         //direzione motore destra
+#define STEPD 3        //pin di step motore destra
+#define IRD 4          //sensore IR a destra
+#define DIRS 5         //direzione motore sinistra
+#define STEPS 6        //pin di step motore sinistra
+#define IRS 7          //sensore IR sinistra
+#define LAMA 8         //rele di controllo motore lama
+#define INTERVALLO 10  //durata del movimento generale
+ 
+int rilevamentoD = HIGH;
+int rilevamentoS = HIGH;
+
+int ritorno = 100;     //durata della rotazione senza controllare nuovamente (variabile perche nel programma il robot potra adattarlo in base alle condizioni)
+
+int i;
+
+void setup()
+ {
+  Serial.begin(9600);  //inizio della trasmissione seriale (serve soprattutto a noi per capire a che punto del programma si trova)
+  Serial.print("Mi sono acceso correttamente.");
+  delay(500);
+
+  pinMode(DIRD, OUTPUT);
+  pinMode(STEPD, OUTPUT);
+  pinMode(IRD, INPUT); 
+  pinMode(DIRS, OUTPUT);
+  pinMode(STEPS, OUTPUT);
+  pinMode(IRS, INPUT);
+  pinMode(LAMA, OUTPUT); 
+ }
+ 
+void step(boolean dirAttualeD, boolean dirAttualeS, int steps)
+{
+  digitalWrite(DIRD, dirAttualeD); //invia al driver destro la direzione attuale
+  digitalWrite(DIRS, dirAttualeS); //invia al driver sinistro la direzione attuale
+  for(int i=0; i<steps; i++)       //ATTENZIONE: durante il ciclo non controlla i sensori!
+  {
+    digitalWrite(STEPD, HIGH);
+    delay(1.2);
+    digitalWrite(STEPS, LOW);
+    delay(1.2);
+    digitalWrite(STEPD, LOW);
+    delay(1.2);
+    digitalWrite(STEPS, HIGH);
+    delay(1.2);
+  }
+}
+ 
+void loop()
+{
+  rilevamentoD = digitalRead(IRD); //rileva la condizione del sensore destro
+  rilevamentoS = digitalRead(IRS); //rileva la condizione del sensore sinistro
+if(rilevamentoD == HIGH && rilevamentoS == HIGH) //se sentrambi non rilevano ostacoli
+{
+   Serial.print("\nVia libera!");
+   step(true, false, INTERVALLO); //ATTENZIONE: i motori sono opposti sullo stesso asse quindi le rotazioni in senso discorde manderanno avanti o indietro il robot!
+}
+else
+{
+  if(rilevamentoD == LOW) //se il sensore destro rileva un ostacolo
+  {
+    Serial.print("\nOstacolo a destra!");
+    for(i=0; i<ritorno; i++) //ripeti ritorno-1 volte la funzione senza ricontrollare i sensori
+    {
+    step(false, false, INTERVALLO); //ATTENZIONE: i motori sono opposti sullo stesso asse quindi le rotazioni in senso concorde faranno ruotare il robot!
+    }
+ }
+ if(rilevamentoS == LOW) //se il sensore sinistro rileva un ostacolo
+ {
+    Serial.print("\nOstacolo a sinistra!");
+    for(i=0; i<ritorno; i++) //ripeti ritorno-1 volte la funzione senza ricontrollare i sensori
+    {
+    step(true, true, INTERVALLO); //ATTENZIONE: i motori sono opposti sullo stesso asse quindi le rotazioni in senso concorde faranno ruotare il robot!
+    }
+ }  
+}
+}
